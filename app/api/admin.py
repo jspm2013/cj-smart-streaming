@@ -20,10 +20,8 @@ templates = Jinja2Templates(directory="web/templates")
 router = APIRouter(tags=["Admin"])
 
 # ---------- Redis Queue ----------
-redis_url = settings.__dict__.get("REDIS_URL", "redis://redis:6379/0")
-redis_conn = redis.from_url(redis_url)
+redis_conn = redis.from_url(settings.REDIS_URL)
 q = Queue("default", connection=redis_conn)
-
 
 # ---------- Login ----------
 @router.get("/login")

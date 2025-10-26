@@ -1,10 +1,11 @@
-import os
-import redis
 from rq import Worker, Queue, Connection
+import redis
+from app.core.settings import settings
 
 listen = ['default']
-redis_url = os.getenv('REDIS_URL', 'redis://redis:6379/0')
-conn = redis.from_url(redis_url)
+
+# ---------- Redis Connection ----------
+conn = redis.from_url(settings.REDIS_URL)
 
 if __name__ == '__main__':
     with Connection(conn):
