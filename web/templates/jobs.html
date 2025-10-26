@@ -1,0 +1,51 @@
+{% extends "base.html" %} {% block title %}Job Queue – HLS Streamer{% endblock
+%} {% block content %}
+<h2 class="text-xl lg:text-2xl font-bold mb-4">Background Jobs</h2>
+
+<div class="card bg-base-100 shadow">
+  <div class="card-body">
+    <div class="overflow-x-auto">
+      <table class="table table-sm">
+        <thead class="bg-base-200">
+          <tr>
+            <th>ID</th>
+            <th>Status</th>
+            <th>Enqueued</th>
+            <th>Result</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for j in jobs %}
+          <tr>
+            <td class="font-mono text-xs">{{ j.id }}</td>
+            <td>
+              {% if j.status == "finished" %}
+              <span class="badge badge-success">finished</span>
+              {% elif j.status == "failed" %}
+              <span class="badge badge-error">failed</span>
+              {% elif j.status == "queued" %}
+              <span class="badge badge-neutral">queued</span>
+              {% elif j.status == "started" %}
+              <span class="badge badge-info">processing</span>
+              {% else %}
+              <span class="badge">{{ j.status }}</span>
+              {% endif %}
+            </td>
+            <td class="text-xs">{{ j.enqueued_at or "-" }}</td>
+            <td class="text-xs truncate max-w-[300px]">
+              {{ j.result or "-" }}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="4" class="text-center py-6 opacity-70">
+              No jobs found in queue.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
