@@ -1,0 +1,63 @@
+{% extends "base.html" %} {% block title %}Videos – HLS Streamer{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+  <h2 class="text-xl lg:text-2xl font-bold">Videos</h2>
+  <a href="/admin/upload" class="btn btn-primary btn-sm">+ Upload</a>
+</div>
+
+<div class="card bg-base-100 shadow">
+  <div class="card-body">
+    <div class="overflow-x-auto">
+      <table class="table table-sm">
+        <thead class="bg-base-200">
+          <tr>
+            <th>Video ID</th>
+            <th>File</th>
+            <th>Status</th>
+            <th>Play URL (master.m3u8)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for v in videos %}
+          <tr>
+            <td class="font-mono text-xs">{{ v.video_id }}</td>
+            <td class="truncate">{{ v.filename }}</td>
+            <td>
+              {% if v.status == "ready" %}<span class="badge badge-success"
+                >ready</span
+              >{% else %}<span class="badge">{{ v.status }}</span>{% endif %}
+            </td>
+            <td class="text-xs">
+              <code>/hls/{{ v.video_id }}/master.m3u8?token=...jwt...</code>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="4" class="text-center py-6 opacity-70">
+              No videos yet.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="mt-8 card bg-base-100 shadow">
+  <div class="card-body text-sm opacity-80">
+    <p>
+      Use <code>POST /api/token</code> with headers <code>X-App-Name</code> and
+      <code>X-App-Key</code> to obtain a short-lived token:
+    </p>
+    <pre>
+{
+  "video_id": "YOUR_VIDEO_ID"
+}</pre
+    >
+    <p>
+      Then play: <code>/hls/YOUR_VIDEO_ID/master.m3u8?token=&lt;JWT&gt;</code>
+    </p>
+  </div>
+</div>
+{% endblock %}

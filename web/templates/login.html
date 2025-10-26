@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Login – HLS Streamer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/daisyui.css" />
+  </head>
+  <body class="min-h-screen bg-base-200">
+    <div class="min-h-screen flex items-center justify-center">
+      <form
+        method="post"
+        action="/admin/login"
+        class="card w-full max-w-sm bg-base-100 shadow"
+      >
+        <div class="card-body">
+          <h2 class="card-title mb-2">Admin Login</h2>
+          {% if error %}
+          <div class="alert alert-error text-sm">{{ error }}</div>
+          {% endif %}
+          <label class="form-control w-full">
+            <span class="label-text">Username</span>
+            <input
+              name="username"
+              class="input input-bordered w-full"
+              required
+            />
+          </label>
+          <label class="form-control w-full">
+            <span class="label-text">Password</span>
+            <input
+              type="password"
+              name="password"
+              class="input input-bordered w-full"
+              required
+            />
+          </label>
+          <div class="card-actions justify-end">
+            <button class="btn btn-primary">Login</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </body>
+</html>

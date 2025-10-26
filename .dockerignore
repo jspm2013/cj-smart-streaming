@@ -1,0 +1,40 @@
+# Version control
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+*.egg-info/
+.eggs/
+*.log
+
+# Environments / deps
+.env
+.venv/
+venv/
+.env.*
+Pipfile
+Pipfile.lock
+
+# Node / front-end junk (if any)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# OS/editor
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Tests, docs, misc
+tests/
+docs/
+
+# Custom
+/rag*
+rag_context*

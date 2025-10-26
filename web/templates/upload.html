@@ -1,0 +1,18 @@
+{% extends "base.html" %} {% block title %}Upload Video{% endblock %} {% block
+content %}
+<h2 class="text-xl font-bold mb-4">Upload MP4 / MOV / MKV</h2>
+<form
+  action="/admin/upload"
+  method="post"
+  enctype="multipart/form-data"
+  class="space-y-3 max-w-md"
+>
+  <input
+    type="file"
+    name="file"
+    class="file-input file-input-bordered w-full"
+    required
+  />
+  <button type="submit" class="btn btn-primary">Upload & Package</button>
+</form>
+{% endblock %}

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}HLS Streamer Admin{% endblock %}</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/daisyui.css" />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body class="min-h-screen bg-base-200 text-base-content">
+    <div class="drawer lg:drawer-open">
+      <input id="admin-drawer" type="checkbox" class="drawer-toggle" />
+      <div class="drawer-content flex min-h-screen flex-col">
+        <header
+          class="navbar bg-base-100 border-b border-base-300 sticky top-0 z-40"
+        >
+          <div class="flex-1 items-center gap-2 min-w-0">
+            <label
+              for="admin-drawer"
+              class="btn btn-ghost btn-square btn-sm lg:hidden"
+              >☰</label
+            >
+            <span class="normal-case text-lg font-semibold lg:ml-4 truncate"
+              >SMΛRT HLS Streamer | Admin</span
+            >
+          </div>
+          <nav class="flex-none gap-3 mr-2 lg:mr-4">
+            <a class="btn btn-outline btn-sm" href="/admin">Videos</a>
+            <a class="btn btn-outline btn-sm" href="/admin/upload">Upload</a>
+            <a class="btn btn-outline btn-sm" href="/admin/client-apps"
+              >Client Apps</a
+            >
+            <form method="post" action="/admin/logout" class="inline">
+              <button class="btn btn-sm">Logout</button>
+            </form>
+          </nav>
+        </header>
+        <main class="grow">
+          <div class="max-w-7xl mx-auto px-4 lg:px-6 py-6">
+            {% block content %}{% endblock %}
+          </div>
+        </main>
+      </div>
+      <div class="drawer-side z-30">
+        <label for="admin-drawer" class="drawer-overlay"></label>
+        <aside
+          class="w-72 pt-16 lg:pt-2 bg-base-100 border-r border-base-300 min-h-full"
+        >
+          <div class="pt-4 flex justify-center items-center opacity-80">
+            <span class="text-xl font-bold">#Codejobs</span>
+          </div>
+          <div class="p-4">
+            <h3 class="px-2 text-sm font-semibold uppercase opacity-70 mb-2">
+              Navigation
+            </h3>
+            <ul class="menu">
+              <li><a href="/admin">Videos</a></li>
+              <li><a href="/admin/upload">Upload</a></li>
+              <li><a href="/admin/client-apps">Client Apps</a></li>
+            </ul>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </body>
+</html>
