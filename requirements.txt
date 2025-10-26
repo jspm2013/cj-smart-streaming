@@ -12,3 +12,4 @@ passlib[bcrypt]==1.7.4
 redis==5.0.3
 rq==1.15.1
 prometheus-client==0.20.0
+itsdangerous==2.2.0
