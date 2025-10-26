@@ -29,11 +29,11 @@ class Settings(BaseSettings):
         "426x240_400k,640x360_800k,842x480_1200k,1280x720_2500k"
     )
 
-    # --- JWT for streaming ---
+    # --- JWT for streaming (per-domain tokens) ---
     JWT_SECRET: str = os.getenv("JWT_SECRET", "please-change-me")
     JWT_ISSUER: str = os.getenv("JWT_ISSUER", "minio-hls-streamer")
     JWT_AUDIENCE: str = os.getenv("JWT_AUDIENCE", "video-stream")
-    TOKEN_TTL_SECONDS: int = int(os.getenv("TOKEN_TTL_SECONDS", "900"))
+    TOKEN_TTL_SECONDS: int = int(os.getenv("TOKEN_TTL_SECONDS", "900"))  # short-lived by design
 
     # --- Cache headers ---
     CACHE_MAX_AGE: int = int(os.getenv("CACHE_MAX_AGE", "60"))
