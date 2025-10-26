@@ -1,7 +1,9 @@
 {% extends "base.html" %} {% block title %}Upload Video{% endblock %} {% block
 content %}
 <h2 class="text-xl font-bold mb-4">Upload MP4 / MOV / MKV</h2>
+
 <form
+  id="uploadForm"
   action="/admin/upload"
   method="post"
   enctype="multipart/form-data"
@@ -13,6 +15,41 @@ content %}
     class="file-input file-input-bordered w-full"
     required
   />
-  <button type="submit" class="btn btn-primary">Upload & Package</button>
+  <button type="submit" class="btn btn-primary w-full">Upload & Package</button>
 </form>
+
+<!-- Toast container -->
+<div id="toast" class="toast toast-end toast-top hidden">
+  <div class="alert alert-info">
+    <span id="toastMsg">Uploading...</span>
+    <button
+      type="button"
+      class="btn btn-ghost btn-xs ml-2"
+      onclick="hideToast()"
+    >
+      ✕
+    </button>
+  </div>
+</div>
+
+<script>
+  const toast = document.getElementById("toast");
+  const toastMsg = document.getElementById("toastMsg");
+
+  function showToast(message) {
+    toastMsg.textContent = message;
+    toast.classList.remove("hidden");
+    toast.classList.add("block");
+  }
+
+  function hideToast() {
+    toast.classList.add("hidden");
+  }
+
+  const form = document.getElementById("uploadForm");
+  form.addEventListener("submit", () => {
+    showToast("Packaging job started. Check Jobs page for status.");
+    // Let the form continue submitting normally
+  });
+</script>
 {% endblock %}

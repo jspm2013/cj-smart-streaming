@@ -1,0 +1,48 @@
+version: "3.9"
+
+services:
+  web:
+    build: .
+    command: ./scripts/run.sh
+    ports:
+      - "8080:8080"
+    env_file: .env
+    depends_on:
+      - redis
+      - minio
+      - db
+
+  worker:
+    build: .
+    command: python worker.py
+    env_file: .env
+    depends_on:
+      - redis
+      - minio
+      - db
+
+  redis:
+    image: redis:8.2-alpine
+
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - ./data/minio:/data
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: hls
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
