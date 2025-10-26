@@ -10,7 +10,12 @@ from app.api import router as api_router
 setup_logging()
 
 app = FastAPI(title="MinIO HLS Streamer")
-app.add_middleware(SessionMiddleware, secret_key=settings.SESSION_SECRET, session_cookie="admin_session")
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=settings.SESSION_SECRET,
+    session_cookie=settings.SESSION_COOKIE,
+    https_only=settings.SESSION_COOKIE_SECURE,
+)
 
 app.include_router(api_router)
 

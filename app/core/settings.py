@@ -6,6 +6,8 @@ class Settings(BaseSettings):
     ADMIN_USER: str = os.getenv("ADMIN_USER", "admin")
     ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD", "changeme")
     SESSION_SECRET: str = os.getenv("SESSION_SECRET", "please-change")
+    SESSION_COOKIE: str = os.getenv("SESSION_COOKIE", "admin_session")
+    SESSION_COOKIE_SECURE: bool = os.getenv("SESSION_COOKIE_SECURE", "false").lower() == "true"
 
     # DB
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./stream.db")

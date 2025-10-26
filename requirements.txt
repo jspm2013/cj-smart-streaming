@@ -9,3 +9,6 @@ minio==7.2.7
 aiofiles==23.2.1
 PyJWT==2.9.0
 passlib[bcrypt]==1.7.4
+redis==5.0.3
+rq==1.15.1
+prometheus-client==0.20.0

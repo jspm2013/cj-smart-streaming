@@ -1,84 +1,147 @@
-import uuid, secrets
-from fastapi import APIRouter, Request, Depends, UploadFile, Form, HTTPException, status
+import redis
+from rq import Queue
+from fastapi import (
+    APIRouter, Request, Depends, UploadFile, Form,
+    HTTPException
+)
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+
 from app.core.db import get_db
 from app.core.settings import settings
-from app.core.auth import require_admin_session, hash_password, verify_password, SESSION_COOKIE
+from app.core.auth import require_admin_session, hash_password
 from app.domain.models import Video, ClientApp
-from app.services.hls_service import package_to_hls, upload_hls_dir
 from app.services.minio_service import ensure_bucket
+from app.services.metrics import REQUEST_COUNTER, ERROR_COUNTER
+from app.workers.tasks import package_and_upload_video
 
 templates = Jinja2Templates(directory="web/templates")
 router = APIRouter(tags=["Admin"])
+
+# ---------- Redis Queue ----------
+redis_url = settings.__dict__.get("REDIS_URL", "redis://redis:6379/0")
+redis_conn = redis.from_url(redis_url)
+q = Queue("default", connection=redis_conn)
+
 
 # ---------- Login ----------
 @router.get("/login")
 def login_form(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
 
+
 @router.post("/login")
 def login_submit(request: Request, username: str = Form(...), password: str = Form(...)):
     if username == settings.ADMIN_USER and password == settings.ADMIN_PASSWORD:
         request.session["is_admin"] = True
+        REQUEST_COUNTER.labels(endpoint="/admin/login", method="POST", status="200").inc()
         return RedirectResponse(url="/admin", status_code=303)
-    return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid credentials"}, status_code=401)
+    ERROR_COUNTER.labels(endpoint="/admin/login").inc()
+    return templates.TemplateResponse(
+        "login.html",
+        {"request": request, "error": "Invalid credentials"},
+        status_code=401,
+    )
+
 
 @router.post("/logout")
 def logout(request: Request):
     request.session.clear()
     resp = RedirectResponse(url="/admin/login", status_code=303)
-    resp.delete_cookie(SESSION_COOKIE)
+    resp.delete_cookie(settings.SESSION_COOKIE)
     return resp
+
 
 # ---------- Dashboard ----------
 @router.get("", dependencies=[Depends(require_admin_session)])
 def admin_index(request: Request, db: Session = Depends(get_db)):
     videos = db.query(Video).order_by(Video.id.desc()).all()
     apps = db.query(ClientApp).order_by(ClientApp.name.asc()).all()
-    return templates.TemplateResponse("videos.html", {"request": request, "videos": videos, "apps": apps, "settings": settings})
+    REQUEST_COUNTER.labels(endpoint="/admin", method="GET", status="200").inc()
+    return templates.TemplateResponse(
+        "videos.html",
+        {"request": request, "videos": videos, "apps": apps, "settings": settings},
+    )
+
 
 # ---------- Upload ----------
 @router.get("/upload", dependencies=[Depends(require_admin_session)])
 def upload_page(request: Request):
+    REQUEST_COUNTER.labels(endpoint="/admin/upload", method="GET", status="200").inc()
     return templates.TemplateResponse("upload.html", {"request": request})
 
+
 @router.post("/upload", dependencies=[Depends(require_admin_session)])
-async def upload_video(file: UploadFile, db: Session = Depends(get_db)):
-    data = await file.read()
+async def upload_video(file: UploadFile, request: Request):
+    """
+    Uploads file, enqueues packaging task to Redis RQ worker.
+    """
     ensure_bucket()
-    pkg = package_to_hls(data, file.filename or "video.mp4")
-    video_id = uuid.uuid4().hex[:16]
-    upload_hls_dir(pkg["out_dir"], video_id)
-    v = Video(video_id=video_id, filename=file.filename, status="ready", meta=pkg["meta"])
-    db.add(v); db.commit()
-    return RedirectResponse(url="/admin", status_code=303)
+    data = await file.read()
+    job = q.enqueue(package_and_upload_video, data, file.filename)
+    REQUEST_COUNTER.labels(endpoint="/admin/upload", method="POST", status="202").inc()
+    print(f"📦 Enqueued packaging job {job.id} for {file.filename}")
+    return RedirectResponse(url="/admin/jobs", status_code=303)
+
+
+# ---------- Jobs Dashboard ----------
+@router.get("/jobs", dependencies=[Depends(require_admin_session)])
+def jobs_page(request: Request):
+    """
+    Displays simple job list (latest 20 jobs from RQ).
+    """
+    REQUEST_COUNTER.labels(endpoint="/admin/jobs", method="GET", status="200").inc()
+    jobs = []
+    for j in q.jobs[:20]:
+        jobs.append({
+            "id": j.id,
+            "status": j.get_status(refresh=False),
+            "enqueued_at": getattr(j.enqueued_at, "isoformat", lambda: "")(),
+            "result": j.result,
+        })
+    return templates.TemplateResponse(
+        "jobs.html", {"request": request, "jobs": jobs}
+    )
+
 
 # ---------- Client Apps (API key holders) ----------
 @router.get("/client-apps", dependencies=[Depends(require_admin_session)])
 def client_apps_page(request: Request, db: Session = Depends(get_db)):
     apps = db.query(ClientApp).order_by(ClientApp.name.asc()).all()
+    REQUEST_COUNTER.labels(endpoint="/admin/client-apps", method="GET", status="200").inc()
     return templates.TemplateResponse("client-apps.html", {"request": request, "apps": apps})
+
 
 @router.post("/client-apps", dependencies=[Depends(require_admin_session)])
 def create_client_app(name: str = Form(...), api_key: str = Form(...), db: Session = Depends(get_db)):
     if not name or not api_key:
+        ERROR_COUNTER.labels(endpoint="/admin/client-apps").inc()
         raise HTTPException(400, "Name and API key required")
+
     if db.query(ClientApp).filter(ClientApp.name == name).first():
-        raise HTTPException(400, "Name exists")
+        raise HTTPException(400, "Name already exists")
+
     row = ClientApp(name=name, api_key_hash=hash_password(api_key), active=True)
-    db.add(row); db.commit()
+    db.add(row)
+    db.commit()
+    REQUEST_COUNTER.labels(endpoint="/admin/client-apps", method="POST", status="201").inc()
     return RedirectResponse(url="/admin/client-apps", status_code=303)
+
 
 @router.post("/client-apps/{cid}/toggle", dependencies=[Depends(require_admin_session)])
 def toggle_client_app(cid: int, db: Session = Depends(get_db)):
     row = db.query(ClientApp).filter(ClientApp.id == cid).first()
-    if row: row.active = not row.active; db.commit()
+    if row:
+        row.active = not row.active
+        db.commit()
+        REQUEST_COUNTER.labels(endpoint="/admin/client-apps/toggle", method="POST", status="200").inc()
     return RedirectResponse(url="/admin/client-apps", status_code=303)
+
 
 @router.post("/client-apps/{cid}/delete", dependencies=[Depends(require_admin_session)])
 def delete_client_app(cid: int, db: Session = Depends(get_db)):
     db.query(ClientApp).filter(ClientApp.id == cid).delete()
     db.commit()
+    REQUEST_COUNTER.labels(endpoint="/admin/client-apps/delete", method="POST", status="200").inc()
     return RedirectResponse(url="/admin/client-apps", status_code=303)
