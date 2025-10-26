@@ -2,21 +2,15 @@ from fastapi import Request, HTTPException, status
 from passlib.context import CryptContext
 import hashlib
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# bcrypt cost factor set explicitly for clarity and consistency
+pwd_context = CryptContext(schemes=["bcrypt"], bcrypt__rounds=12, deprecated="auto")
 
-def _normalize_secret(secret: str) -> bytes:
+def _normalize_secret(secret: str) -> str:
     """
-    Reduce arbitrarily long secrets to a fixed-size 32-byte digest (SHA-256 binary).
-    This ensures bcrypt input <= 72 bytes while keeping strong entropy.
+    Pre-hash arbitrary-length secrets to a fixed-size SHA-256 hex digest (64 chars).
+    This ensures bcrypt input <= 72 bytes and prevents encoding issues.
     """
-    return hashlib.sha256(secret.encode()).digest()
-
-def verify_password(plain: str, hashed: str) -> bool:
-    try:
-        normalized = _normalize_secret(plain)
-        return pwd_context.verify(normalized, hashed)
-    except Exception:
-        return False
+    return hashlib.sha256(secret.encode("utf-8")).hexdigest()
 
 def hash_password(plain: str) -> str:
     """
@@ -24,6 +18,16 @@ def hash_password(plain: str) -> str:
     """
     normalized = _normalize_secret(plain)
     return pwd_context.hash(normalized)
+
+def verify_password(plain: str, hashed: str) -> bool:
+    """
+    Verifies a secret by pre-hashing with SHA-256 and comparing with bcrypt hash.
+    """
+    try:
+        normalized = _normalize_secret(plain)
+        return pwd_context.verify(normalized, hashed)
+    except Exception:
+        return False
 
 def require_admin_session(request: Request):
     if not request.session.get("is_admin"):
