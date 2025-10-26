@@ -28,3 +28,13 @@ def upload_dir(local_dir: str, remote_prefix: str):
 def get_object_stream(path: str):
     c = _client()
     return c.get_object(settings.MINIO_BUCKET, path)
+
+def delete_prefix(prefix: str):
+    """
+    Delete all objects under a given prefix (e.g. a video folder).
+    """
+    c = _client()
+    ensure_bucket()
+    objects = c.list_objects(settings.MINIO_BUCKET, prefix=prefix, recursive=True)
+    for obj in objects:
+        c.remove_object(settings.MINIO_BUCKET, obj.object_name)

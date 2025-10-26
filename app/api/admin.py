@@ -12,7 +12,7 @@ from app.core.db import get_db
 from app.core.settings import settings
 from app.core.auth import require_admin_session, hash_password
 from app.domain.models import Video, ClientApp
-from app.services.minio_service import ensure_bucket
+from app.services.minio_service import ensure_bucket, delete_prefix
 from app.services.metrics import REQUEST_COUNTER, ERROR_COUNTER
 from app.workers.tasks import package_and_upload_video
 
@@ -101,6 +101,29 @@ def jobs_page(request: Request):
     return templates.TemplateResponse(
         "jobs.html", {"request": request, "jobs": jobs}
     )
+
+
+# ---------- Delete Video ----------
+@router.post("/videos/{video_id}/delete", dependencies=[Depends(require_admin_session)])
+def delete_video(video_id: str, db: Session = Depends(get_db)):
+    """
+    Deletes a video record and its associated MinIO files.
+    """
+    video = db.query(Video).filter(Video.video_id == video_id).first()
+    if not video:
+        raise HTTPException(status_code=404, detail="Video not found")
+
+    try:
+        delete_prefix(video.video_id)  # remove from MinIO
+        db.delete(video)
+        db.commit()
+        REQUEST_COUNTER.labels(endpoint="/admin/videos/delete", method="POST", status="200").inc()
+    except Exception as e:
+        db.rollback()
+        ERROR_COUNTER.labels(endpoint="/admin/videos/delete").inc()
+        raise HTTPException(status_code=500, detail=f"Delete failed: {e}")
+
+    return RedirectResponse(url="/admin", status_code=303)
 
 
 # ---------- Client Apps (API key holders) ----------

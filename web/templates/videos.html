@@ -15,6 +15,7 @@
             <th>File</th>
             <th>Status</th>
             <th>Play URL (master.m3u8)</th>
+            <th class="text-right">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -23,17 +24,38 @@
             <td class="font-mono text-xs">{{ v.video_id }}</td>
             <td class="truncate">{{ v.filename }}</td>
             <td>
-              {% if v.status == "ready" %}<span class="badge badge-success"
-                >ready</span
-              >{% else %}<span class="badge">{{ v.status }}</span>{% endif %}
+              {% if v.status == "ready" %}
+              <span class="badge badge-success">ready</span>
+              {% else %}
+              <span class="badge">{{ v.status }}</span>
+              {% endif %}
             </td>
             <td class="text-xs">
-              <code>/hls/{{ v.video_id }}/master.m3u8?token=...jwt...</code>
+              <div
+                class="tooltip tooltip-bottom tooltip-info"
+                data-tip="Copy URL"
+              >
+                <code
+                  class="cursor-pointer text-accent"
+                  onclick="copyToClipboard('/hls/{{ v.video_id }}/master.m3u8?token=...jwt...')"
+                >
+                  /hls/{{ v.video_id }}/master.m3u8?token=...jwt...
+                </code>
+              </div>
+            </td>
+            <td class="text-right">
+              <form
+                method="post"
+                action="/admin/videos/{{ v.video_id }}/delete"
+                onsubmit="return confirm('Delete this video and its files?')"
+              >
+                <button class="btn btn-xs btn-error">Delete</button>
+              </form>
             </td>
           </tr>
           {% else %}
           <tr>
-            <td colspan="4" class="text-center py-6 opacity-70">
+            <td colspan="5" class="text-center py-6 opacity-70">
               No videos yet.
             </td>
           </tr>
@@ -56,8 +78,26 @@
 }</pre
     >
     <p>
-      Then play: <code>/hls/YOUR_VIDEO_ID/master.m3u8?token=&lt;JWT&gt;</code>
+      Then play:
+      <code>/hls/YOUR_VIDEO_ID/master.m3u8?token=&lt;JWT&gt;</code>
     </p>
   </div>
 </div>
+
+<script>
+  function copyToClipboard(text) {
+    navigator.clipboard
+      .writeText(window.location.origin + text)
+      .then(() => {
+        // Show a temporary success tooltip or toast
+        const tooltip = document.createElement("div");
+        tooltip.className =
+          "tooltip tooltip-open tooltip-success fixed bottom-4 right-4 transition-all";
+        tooltip.setAttribute("data-tip", "Copied!");
+        document.body.appendChild(tooltip);
+        setTimeout(() => tooltip.remove(), 1500);
+      })
+      .catch((err) => console.error("Clipboard copy failed:", err));
+  }
+</script>
 {% endblock %}

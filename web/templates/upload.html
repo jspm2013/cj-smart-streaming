@@ -15,7 +15,14 @@ content %}
     class="file-input file-input-bordered w-full"
     required
   />
-  <button type="submit" class="btn btn-primary w-full">Upload & Package</button>
+  <button
+    id="uploadBtn"
+    type="submit"
+    class="btn btn-primary w-full flex items-center justify-center gap-2"
+  >
+    <span id="spinner" class="loading loading-spinner loading-md hidden"></span>
+    <span id="uploadText">Upload & Package</span>
+  </button>
 </form>
 
 <!-- Toast container -->
@@ -35,6 +42,10 @@ content %}
 <script>
   const toast = document.getElementById("toast");
   const toastMsg = document.getElementById("toastMsg");
+  const spinner = document.getElementById("spinner");
+  const uploadBtn = document.getElementById("uploadBtn");
+  const uploadText = document.getElementById("uploadText");
+  const form = document.getElementById("uploadForm");
 
   function showToast(message) {
     toastMsg.textContent = message;
@@ -46,10 +57,18 @@ content %}
     toast.classList.add("hidden");
   }
 
-  const form = document.getElementById("uploadForm");
-  form.addEventListener("submit", () => {
+  form.addEventListener("submit", (event) => {
+    // Show spinner & toast
+    spinner.classList.remove("hidden");
+    uploadText.textContent = "Uploading...";
+    uploadBtn.disabled = true;
     showToast("Packaging job started. Check Jobs page for status.");
-    // Let the form continue submitting normally
+  });
+
+  // Optional: Ensure spinner hides after redirect (some browsers delay it)
+  window.addEventListener("beforeunload", () => {
+    spinner.classList.add("hidden");
+    uploadText.textContent = "Upload & Package";
   });
 </script>
 {% endblock %}
