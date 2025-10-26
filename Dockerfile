@@ -22,6 +22,7 @@ COPY app ./app
 COPY web ./web
 COPY scripts ./scripts
 COPY tailwind.config.cjs ./tailwind.config.cjs
+COPY worker.py ./worker.py
 
 RUN mkdir -p web/static && \
     tailwindcss -i ./web/static/scss/main.scss -o ./web/static/styles.css -c tailwind.config.cjs --minify && \
