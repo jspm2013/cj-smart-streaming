@@ -3,22 +3,35 @@ content %}
 <h2 class="text-xl font-bold mb-4">Client Apps (JWT Issuers)</h2>
 
 <form
+  id="clientAppForm"
   method="post"
   action="/admin/client-apps"
   class="flex flex-col md:flex-row gap-2 max-w-2xl"
 >
   <input
+    id="appName"
     name="name"
     class="input input-bordered w-full"
     placeholder="my-nextjs-app"
     required
   />
-  <input
-    name="api_key"
-    class="input input-bordered w-full"
-    placeholder="plain API key to hash & store"
-    required
-  />
+  <div class="flex gap-2 w-full">
+    <input
+      id="apiKey"
+      name="api_key"
+      class="input input-bordered w-full"
+      placeholder="plain API key to hash & store"
+      required
+    />
+    <button
+      id="genTokenBtn"
+      type="button"
+      class="btn btn-secondary whitespace-nowrap"
+      title="Generate a secure URL-safe token (SHA-512 based)"
+    >
+      Generate Token
+    </button>
+  </div>
   <button class="btn btn-primary">Add</button>
 </form>
 
@@ -71,4 +84,32 @@ content %}
     </div>
   </div>
 </div>
+
+<script>
+  const genBtn = document.getElementById("genTokenBtn");
+  const apiKeyInput = document.getElementById("apiKey");
+
+  genBtn.addEventListener("click", async () => {
+    genBtn.disabled = true;
+    const orig = genBtn.textContent;
+    genBtn.innerHTML =
+      '<span class="loading loading-spinner loading-xs mr-1"></span>Generating';
+    try {
+      const res = await fetch("/admin/client-apps/generate-token", {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error("Failed to generate token");
+      const data = await res.json();
+      apiKeyInput.value = data.token || "";
+      apiKeyInput.focus();
+      apiKeyInput.select();
+    } catch (e) {
+      alert("Error generating token. Please try again.");
+      console.error(e);
+    } finally {
+      genBtn.disabled = false;
+      genBtn.textContent = orig;
+    }
+  });
+</script>
 {% endblock %}

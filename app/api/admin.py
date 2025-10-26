@@ -1,3 +1,6 @@
+import base64
+import hashlib
+import secrets
 import redis
 from rq import Queue
 from fastapi import (
@@ -166,3 +169,18 @@ def delete_client_app(cid: int, db: Session = Depends(get_db)):
     db.commit()
     REQUEST_COUNTER.labels(endpoint="/admin/client-apps/delete", method="POST", status="200").inc()
     return RedirectResponse(url="/admin/client-apps", status_code=303)
+
+
+# ---------- Secure Token Generation (SHA-512 → URL-safe) ----------
+@router.post("/client-apps/generate-token", dependencies=[Depends(require_admin_session)])
+def generate_client_app_token():
+    """
+    Generates a high-entropy, URL-safe token derived from 64 random bytes,
+    hashed with SHA-512 and base64url-encoded (padding stripped).
+    The raw token is meant to be shown to the admin and pasted as API key.
+    It will be hashed with bcrypt on save (create_client_app).
+    """
+    raw = secrets.token_bytes(64)  # 512 bits of entropy
+    digest = hashlib.sha512(raw).digest()
+    token = base64.urlsafe_b64encode(digest).decode().rstrip("=")
+    return JSONResponse({"token": token})
