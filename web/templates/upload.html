@@ -20,7 +20,7 @@ content %}
     type="submit"
     class="btn btn-primary w-full flex items-center justify-center gap-2"
   >
-    <span id="spinner" class="loading loading-spinner loading-md hidden"></span>
+    <span id="spinner" class="hidden loading-spinner loading-xs"></span>
     <span id="uploadText">Upload & Package</span>
   </button>
 </form>
@@ -57,17 +57,19 @@ content %}
     toast.classList.add("hidden");
   }
 
-  form.addEventListener("submit", (event) => {
-    // Show spinner & toast
-    spinner.classList.remove("hidden");
+  form.addEventListener("submit", () => {
+    // Dynamically apply loading animation only on submit
+    spinner.classList.add("loading");
+
     uploadText.textContent = "Uploading...";
     uploadBtn.disabled = true;
     showToast("Packaging job started. Check Jobs page for status.");
   });
 
-  // Optional: Ensure spinner hides after redirect (some browsers delay it)
+  // Optional: Ensure spinner hides after redirect (e.g., during page unload)
   window.addEventListener("beforeunload", () => {
-    spinner.classList.add("hidden");
+    spinner.classList.add("hidden", "loading-spinner", "loading-xs");
+    spinner.classList.remove("loading");
     uploadText.textContent = "Upload & Package";
   });
 </script>
