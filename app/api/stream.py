@@ -11,7 +11,13 @@ router = APIRouter(tags=["Stream"])
 
 def _verify_token(token: str, video_id: str):
     try:
-        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"], audience=settings.JWT_AUDIENCE, issuer=settings.JWT_ISSUER)
+        payload = jwt.decode(
+            token,
+            settings.JWT_SECRET,
+            algorithms=["HS256"],
+            audience=settings.JWT_AUDIENCE,
+            issuer=settings.JWT_ISSUER,
+        )
     except InvalidTokenError as e:
         raise HTTPException(403, f"Invalid token: {e}")
 
@@ -19,6 +25,7 @@ def _verify_token(token: str, video_id: str):
     if vid not in (video_id, "*"):
         raise HTTPException(403, "Token not valid for this video")
     return True
+
 
 @router.get("/{video_id}/master.m3u8")
 def master_playlist(video_id: str, request: Request):
@@ -38,8 +45,12 @@ def master_playlist(video_id: str, request: Request):
     for v, bw, res in variants:
         lines.append(f"#EXT-X-STREAM-INF:BANDWIDTH={bw},RESOLUTION={res}")
         lines.append(f"{v}/index.m3u8{q}")
-    return PlainTextResponse("\n".join(lines), media_type="application/vnd.apple.mpegurl",
-                             headers={"Cache-Control": f"public, max-age={settings.CACHE_MAX_AGE}"})
+    return PlainTextResponse(
+        "\n".join(lines),
+        media_type="application/vnd.apple.mpegurl",
+        headers={"Cache-Control": f"public, max-age={settings.CACHE_MAX_AGE}"},
+    )
+
 
 @router.get("/{video_id}/{path:path}")
 def playlist_or_segment(video_id: str, path: str, request: Request):
@@ -49,11 +60,26 @@ def playlist_or_segment(video_id: str, path: str, request: Request):
     _verify_token(token, video_id)
 
     object_path = f"{video_id}/{path}"
-    stream = get_object_stream(object_path)
 
+    # If it's a sub-playlist (index.m3u8), rewrite it so each segment has ?token=<same>
     if path.endswith(".m3u8"):
-        media = "application/vnd.apple.mpegurl"
-    elif path.endswith(".mp4"):
+        data = get_object_stream(object_path).read().decode("utf-8")
+        if token:
+            modified = []
+            for line in data.splitlines():
+                if line.strip() and not line.startswith("#") and "?" not in line:
+                    line = f"{line}?token={token}"
+                modified.append(line)
+            data = "\n".join(modified)
+        return PlainTextResponse(
+            data,
+            media_type="application/vnd.apple.mpegurl",
+            headers={"Cache-Control": f"public, max-age={settings.CACHE_MAX_AGE}"},
+        )
+
+    # Otherwise stream binary (TS/MP4)
+    stream = get_object_stream(object_path)
+    if path.endswith(".mp4"):
         media = "video/mp4"
     else:
         media = "video/MP2T"
