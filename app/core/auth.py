@@ -2,8 +2,15 @@ from fastapi import Request, HTTPException, status
 from passlib.context import CryptContext
 import hashlib
 
-# bcrypt cost factor set explicitly for clarity and consistency
-pwd_context = CryptContext(schemes=["bcrypt"], bcrypt__rounds=12, deprecated="auto")
+# Explicit bcrypt setup; pre-load backend once at import
+pwd_context = CryptContext(
+    schemes=["bcrypt"],
+    bcrypt__rounds=12,
+    deprecated="auto",
+)
+
+# Warm-up: run one harmless hash to initialize backend safely
+_pwd_warmup = pwd_context.hash("init")
 
 def _normalize_secret(secret: str) -> str:
     """
