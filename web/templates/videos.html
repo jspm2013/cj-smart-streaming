@@ -72,18 +72,32 @@
 
 <div class="mt-8 card bg-base-100 shadow">
   <div class="card-body text-sm opacity-80">
+    <h3 class="font-semibold mb-2">1.) Get a JWT Token</h3>
     <p>
-      Use <code>POST /api/token</code> with headers <code>X-App-Name</code> and
-      <code>X-App-Key</code> to obtain a short-lived token:
+      Use a <code>POST /api/token</code> request with headers
+      <code>X-App-Name</code> and <code>X-App-Key</code> (both from page Client
+      Apps) to obtain a client specific JWT token, by passing the video ID (as
+      JSON/Body) shown in the video table above for each video:
     </p>
     <pre>
-{
-  "video_id": "YOUR_VIDEO_ID"
-}</pre
-    >
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-App-Name": "...",
+          "X-App-Key": "...",
+        },
+        body: JSON.stringify({ video_id: videoId, origin }),
+      }
+    </pre>
+    <h3 class="font-semibold mt-4 mb-2">
+      2.) Construct the video URL by using the requested JWT Token
+    </h3>
     <p>
       Then play:
-      <code>/hls/YOUR_VIDEO_ID/master.m3u8?token=&lt;JWT&gt;</code>
+      <code
+        >&lt;STREAMING_API&gt;/hls/&lt;YOUR_VIDEO_ID&gt;/master.m3u8?token=&lt;JWT&gt;</code
+      >
     </p>
   </div>
 </div>
