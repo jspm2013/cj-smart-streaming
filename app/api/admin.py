@@ -15,7 +15,7 @@ from app.core.db import get_db
 from app.core.settings import settings
 from app.core.auth import require_admin_session, hash_password
 from app.domain.models import Video, ClientApp
-from app.services.minio_service import ensure_bucket, delete_prefix
+from app.services.minio_service import ensure_bucket, delete_prefix, prefix_size_bytes
 from app.services.metrics import REQUEST_COUNTER, ERROR_COUNTER
 from app.workers.tasks import package_and_upload_video
 
@@ -60,9 +60,36 @@ def admin_index(request: Request, db: Session = Depends(get_db)):
     videos = db.query(Video).order_by(Video.id.desc()).all()
     apps = db.query(ClientApp).order_by(ClientApp.name.asc()).all()
     REQUEST_COUNTER.labels(endpoint="/admin", method="GET", status="200").inc()
+
+    # Build sizes map in MB (string, 1 decimal)
+    sizes_mb = {}
+    for v in videos:
+        size_bytes = None
+        try:
+            # Prefer the original upload size if recorded
+            if v.meta and isinstance(v.meta, dict):
+                size_bytes = v.meta.get("original_size_bytes")
+            # Fallback: sum the MinIO prefix
+            if not size_bytes:
+                size_bytes = prefix_size_bytes(v.video_id)
+        except Exception:
+            size_bytes = None
+
+        if size_bytes and size_bytes > 0:
+            mb = size_bytes / (1024 * 1024)
+            sizes_mb[v.video_id] = f"{mb:.1f} MB"
+        else:
+            sizes_mb[v.video_id] = "-"
+
     return templates.TemplateResponse(
         "videos.html",
-        {"request": request, "videos": videos, "apps": apps, "settings": settings},
+        {
+            "request": request,
+            "videos": videos,
+            "apps": apps,
+            "settings": settings,
+            "sizes_mb": sizes_mb,
+        },
     )
 
 

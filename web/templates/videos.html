@@ -13,6 +13,7 @@
           <tr>
             <th>Video ID</th>
             <th>File</th>
+            <th>Size</th>
             <th>Status</th>
             <th>Play URL (master.m3u8)</th>
             <th class="text-right">Actions</th>
@@ -23,6 +24,9 @@
           <tr>
             <td class="font-mono text-xs">{{ v.video_id }}</td>
             <td class="truncate">{{ v.filename }}</td>
+            <td class="text-xs whitespace-nowrap">
+              {{ sizes_mb.get(v.video_id, "-") }}
+            </td>
             <td>
               {% if v.status == "ready" %}
               <span class="badge badge-success">ready</span>
@@ -37,9 +41,9 @@
               >
                 <code
                   class="cursor-pointer text-accent"
-                  onclick="copyToClipboard('/hls/{{ v.video_id }}/master.m3u8?token=...jwt...')"
+                  onclick="copyToClipboard('/hls/{{ v.video_id }}/master.m3u8?token=<jwt>')"
                 >
-                  /hls/{{ v.video_id }}/master.m3u8?token=...jwt...
+                  /hls/{{ v.video_id }}/master.m3u8?token=&lt;JWT&gt;
                 </code>
               </div>
             </td>
@@ -55,7 +59,7 @@
           </tr>
           {% else %}
           <tr>
-            <td colspan="5" class="text-center py-6 opacity-70">
+            <td colspan="6" class="text-center py-6 opacity-70">
               No videos yet.
             </td>
           </tr>

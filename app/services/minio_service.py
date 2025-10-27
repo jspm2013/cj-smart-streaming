@@ -38,3 +38,15 @@ def delete_prefix(prefix: str):
     objects = c.list_objects(settings.MINIO_BUCKET, prefix=prefix, recursive=True)
     for obj in objects:
         c.remove_object(settings.MINIO_BUCKET, obj.object_name)
+
+def prefix_size_bytes(prefix: str) -> int:
+    """
+    Sum sizes of all objects under a given prefix.
+    """
+    c = _client()
+    ensure_bucket()
+    total = 0
+    for obj in c.list_objects(settings.MINIO_BUCKET, prefix=prefix, recursive=True):
+        # obj.size is an int in bytes
+        total += getattr(obj, "size", 0) or 0
+    return total

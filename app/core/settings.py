@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     JWT_SECRET: str = os.getenv("JWT_SECRET", "please-change-me")
     JWT_ISSUER: str = os.getenv("JWT_ISSUER", "minio-hls-streamer")
     JWT_AUDIENCE: str = os.getenv("JWT_AUDIENCE", "video-stream")
-    TOKEN_TTL_SECONDS: int = int(os.getenv("TOKEN_TTL_SECONDS", "900"))  # short-lived by design
+    TOKEN_TTL_SECONDS: int = int(os.getenv("TOKEN_TTL_SECONDS", "900"))
 
     # --- Cache headers ---
     CACHE_MAX_AGE: int = int(os.getenv("CACHE_MAX_AGE", "60"))

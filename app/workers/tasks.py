@@ -14,7 +14,9 @@ def package_and_upload_video(file_bytes: bytes, filename: str):
         pkg = package_to_hls(file_bytes, filename)
         video_id = uuid.uuid4().hex[:16]
         upload_hls_dir(pkg["out_dir"], video_id)
-        v = Video(video_id=video_id, filename=filename, status="ready", meta=pkg["meta"])
+        meta = dict(pkg["meta"] or {})
+        meta["original_size_bytes"] = len(file_bytes)
+        v = Video(video_id=video_id, filename=filename, status="ready", meta=meta)
         db.add(v); db.commit()
         return {"video_id": video_id, "status": "ready"}
     except Exception as e:
